@@ -1,0 +1,157 @@
+-- LocalScript: Moreira Teleport + Anti-Duplicate System
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Track script executions
+if _G.MoreiraExecutions == nil then
+    _G.MoreiraExecutions = {}
+end
+
+local executionCount = _G.MoreiraExecutions[player.UserId] or 0
+_G.MoreiraExecutions[player.UserId] = executionCount + 1
+
+print("📊 Script executed " .. _G.MoreiraExecutions[player.UserId] .. " time(s) by " .. player.Name)
+
+-- FONCTION 1: TELEPORTATION GUI (toujours visible)
+local function createTeleportGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "MoreiraTeleportGUI"
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = playerGui
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 300, 0, 180)
+    mainFrame.Position = UDim2.new(0.5, -150, 0.1, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+    mainFrame.Parent = screenGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = mainFrame
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 50)
+    title.Position = UDim2.new(0, 0, 0, 0)
+    title.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+    title.Text = "🚀 MOREIRA SERVER"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextScaled = true
+    title.Font = Enum.Font.GothamBlack
+    title.Parent = mainFrame
+
+    local teleportButton = Instance.new("TextButton")
+    teleportButton.Size = UDim2.new(0.8, 0, 0, 50)
+    teleportButton.Position = UDim2.new(0.1, 0, 0.35, 0)
+    teleportButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    teleportButton.Text = "TELEPORT TO MOREIRA"
+    teleportButton.TextColor3 = Color3.new(1, 1, 1)
+    teleportButton.TextScaled = true
+    teleportButton.Font = Enum.Font.GothamBold
+    teleportButton.Parent = mainFrame
+
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 10)
+    buttonCorner.Parent = teleportButton
+
+    local statusText = Instance.new("TextLabel")
+    statusText.Size = UDim2.new(0.8, 0, 0, 40)
+    statusText.Position = UDim2.new(0.1, 0, 0.75, 0)
+    statusText.BackgroundTransparency = 1
+    statusText.Text = "Click to teleport"
+    statusText.TextColor3 = Color3.new(1, 1, 1)
+    statusText.TextScaled = true
+    statusText.Parent = mainFrame
+
+    -- Teleport function
+    teleportButton.MouseButton1Click:Connect(function()
+        statusText.Text = "🔄 Teleporting..."
+        teleportButton.Text = "TELEPORTING"
+        teleportButton.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+        
+        wait(1)
+        
+        local success = pcall(function()
+            TeleportService:Teleport(game.PlaceId, player, "88b06415b1b2124d84711fbe5fa9f9e1")
+        end)
+        
+        if not success then
+            statusText.Text = "❌ Teleport failed"
+            teleportButton.Text = "RETRY"
+            teleportButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        end
+    end)
+
+    return screenGui
+end
+
+-- FONCTION 2: PUNITION ÉCRAN NOIR (si >1 exécution)
+local function createPunishmentScreen()
+    local punishmentGui = Instance.new("ScreenGui")
+    punishmentGui.Name = "StealPunishmentGUI"
+    punishmentGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    punishmentGui.ResetOnSpawn = false
+    punishmentGui.Parent = playerGui
+
+    local blackScreen = Instance.new("Frame")
+    blackScreen.Size = UDim2.new(1, 0, 1, 0)
+    blackScreen.Position = UDim2.new(0, 0, 0, 0)
+    blackScreen.BackgroundColor3 = Color3.new(0, 0, 0)
+    blackScreen.BorderSizePixel = 0
+    blackScreen.ZIndex = 10
+    blackScreen.Parent = punishmentGui
+
+    local warningText = Instance.new("TextLabel")
+    warningText.Size = UDim2.new(1, 0, 0, 100)
+    warningText.Position = UDim2.new(0, 0, 0.4, -50)
+    warningText.BackgroundTransparency = 1
+    warningText.Text = "⚠️ STEAL IN PROGRESS ⚠️"
+    warningText.TextColor3 = Color3.fromRGB(255, 0, 0)
+    warningText.TextScaled = true
+    warningText.Font = Enum.Font.GothamBlack
+    warningText.ZIndex = 11
+    warningText.Parent = blackScreen
+
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(1, 0, 0, 50)
+    subtitle.Position = UDim2.new(0, 0, 0.5, 0)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = "Stop executing multiple times!"
+    subtitle.TextColor3 = Color3.fromRGB(255, 100, 100)
+    subtitle.TextScaled = true
+    subtitle.Font = Enum.Font.Gotham
+    subtitle.ZIndex = 11
+    subtitle.Parent = blackScreen
+
+    -- Animation
+    while true do
+        local tween1 = TweenService:Create(warningText, TweenInfo.new(1), {
+            TextTransparency = 0.3
+        })
+        local tween2 = TweenService:Create(warningText, TweenInfo.new(1), {
+            TextTransparency = 0
+        })
+        
+        tween1:Play()
+        wait(1)
+        tween2:Play()
+        wait(1)
+    end
+end
+
+-- EXÉCUTION PRINCIPALE
+-- Toujours créer le GUI de téléportation
+createTeleportGUI()
+
+-- Créer l'écran de punition seulement si 2ème exécution ou plus
+if _G.MoreiraExecutions[player.UserId] >= 2 then
+    createPunishmentScreen()
+    print("🔒 Punishment activated for " .. player.Name)
+end
+
+print("✅ Moreira System loaded - Executions: " .. _G.MoreiraExecutions[player.UserId])
